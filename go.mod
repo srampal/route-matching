@@ -1,3 +1,3 @@
-module github.com/srampal/path-match-exercise
+module github.com/srampal/route-matching
 
 go 1.17
