@@ -1,11 +1,32 @@
-/* Code exercise program.  Define a library that allows creation of "Routes" with paths and associated service strings and also allows subsequent retrieval of best matchng routes. Each route can be of type "exact" or "prefix" corresponding to exact match lookup and longest prefix match based lookup. The service corresponding to the best match should be returned always and if there is no match, a default service called "default-service" should be returned. 
+/* Code exercise program.  Define a library that allows creation of "Routes" with paths 
+and associated service strings and also allows subsequent retrieval of best matchng routes. 
+Each route can be of type "exact" or "prefix" corresponding to exact match lookup and longest
+prefix match based lookup. The service corresponding to the best match should be returned
+always and if there is no match, a default service called "default-service" should be returned. 
 
-Exact match routes get priority over prefix match routes.  Also, AddRoute() can be used to modify the "destination Service" for an existing entry, however AddRoute for the same path, once as a exact match route and once as a prefix match route, should not be treated as a modification of the first route and should allow both routes to exist with the exact match route having priority over the prefix match version
+Exact match routes get priority over prefix match routes.  Also, AddRoute() can be used to 
+modify the "destination Service" for an existing entry, however AddRoute for the same path, 
+once as a exact match route and once as a prefix match route, should not be treated as a 
+modification of the first route and should allow both routes to exist with the exact match 
+route having priority over the prefix match version
 
 Design summary:
-A combination of a map/ hash table (for the exact match routes) and a sorted list (slice) (for the prefix match routes) is used.  Entries are first looked up in the exact match table. If found in this table, we are done (usually with an O(1) lookup).  If not found in the exact match table, the path is then looked up in the prefix match slice which is sorted by decreasing prefix length (longest prefix first)  and looked up with a sequential traversal.  Once a match is found in the prefix list, a dynamically generated exact match entry is also created in the exact match hash table so that future lookups for this path can again in the fast path.  Anytime a prefix entry is created/ deleted modified, the corresponding dynamically generated exact match entries are deleted/ flushed since they may now have stale routing information. 
+A combination of a map/ hash table (for the exact match routes) and a sorted list (slice) 
+(for the prefix match routes) is used.  Entries are first looked up in the exact match table.
+If found in this table, we are done (usually with an O(1) lookup).  If not found in the exact
+match table, the path is then looked up in the prefix match slice which is sorted by decreasing 
+prefix length (longest prefix first)  and looked up with a sequential traversal.  Once a match 
+is found in the prefix list, a dynamically generated exact match entry is also created in the 
+exact match hash table so that future lookups for this path can again in the fast path.  Anytime 
+a prefix entry is created/ deleted modified, the corresponding dynamically generated exact match 
+entries are deleted/ flushed since they may now have stale routing information. 
 
-The current design should be well performant specially due to the creation of the dynamic "cache" style entries which will convert must lookups to be an O(1) operation for any mix of exact match and prefix match entries. If additional performance is desired, it could be achieved via alternate data structures including radix/ Patricia trees and arrays of slices for the prex table. A simple initial enhancement would be to change the slice to a linked list so that insertions and deletions are faster and there is no requirement for large contiguous memory as is the case with arrays or slices.
+The current design should be well performant specially due to the creation of the dynamic "cache"
+style entries which will convert must lookups to be an O(1) operation for any mix of exact match 
+and prefix match entries. If additional performance is desired, it could be achieved via alternate 
+data structures including radix/ Patricia trees and arrays of slices for the prex table. A simple 
+initial enhancement would be to change the slice to a linked list so that insertions and deletions 
+are faster and there is no requirement for large contiguous memory as is the case with arrays or slices.
 
 
 Current caveats include: 
@@ -13,11 +34,11 @@ Current caveats include:
 2) Path is considered case sensitive  
 3) Input validation checks are not applied as they would in practice
 4) Route adds and modifies are supported but not deletions, this can easily be added
-5) Although the performance should be reasonable given the use of dynamically created exact match entries, even further 
-performance optimizations are possible (including changing the prefix match list to either an array of lists or  
-trie structure that can be used to perform longest prefix string matching without needing to traverse a single list). 
-Optimizations for table memory scale, and usage/ hit rate based caching can also be added to address deployment environment 
-constraints.
+5) Although the performance should be reasonable given the use of dynamically created exact match 
+entries, even further performance optimizations are possible (including changing the prefix match 
+list to either an array of lists or trie structure that can be used to perform longest prefix string 
+matching without needing to traverse a single list).  Optimizations for table memory scale, and 
+usage/ hit rate based caching can also be added to address deployment environment constraints.
 
 e.g. AddRoute("/api/1", "exact", "service-1")
      AddRoute("/api/1/1", "exact", "service-2")
